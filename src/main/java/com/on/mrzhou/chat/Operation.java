@@ -3,7 +3,9 @@ package com.on.mrzhou.chat;
 
 import com.alibaba.fastjson.JSON;
 import com.on.mrzhou.chat.constants.Constants;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -29,7 +31,11 @@ public class Operation {
         log.info("收到消息,发送给接收方，channel id" + ctx.channel().id());
         String chatId = message.getChatId();
         if (WebSocketServerHandler.userMap.containsKey(chatId)) {
-            ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
+            ChannelId channelId = WebSocketServerHandler.userMap.get(chatId);
+            Channel channel = WebSocketServerHandler.channelGroup.find(channelId);
+            channel.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
+        }else{
+            log.info("接收方不在线，跳过");
         }
     }
 

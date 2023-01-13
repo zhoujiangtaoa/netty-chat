@@ -17,6 +17,7 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -102,6 +103,11 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
+        for (Map.Entry<String, ChannelId> next : userMap.entrySet()) {
+            if (next.getValue().equals(ctx.channel().id())) {
+                userMap.remove(next.getKey());
+            }
+        }
         channelGroup.remove(ctx.channel());
         log.info("客户端连接断开");
     }
