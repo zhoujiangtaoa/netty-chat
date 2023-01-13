@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Sharable
 public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
-    //GlobalEventExecutor.INSTANCE 是全局的事件执行器，是一个单例
+    /**
+     * 通道组
+     */
     public static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     /**
@@ -40,12 +42,14 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object o) {
 
-        //发送心跳包
+        //发送心跳消息
         if (o instanceof IdleStateEvent && ((IdleStateEvent) o).state().equals(IdleState.WRITER_IDLE)) {
 
-            ctx.writeAndFlush(MessageProtocol.HEART_BEAT);
+            SocketMessage socketMessage = new SocketMessage();
+            socketMessage.setMessageType(MessageProtocol.HEART_BEAT);
+            receiveMessages(ctx,socketMessage);
 
-            log.info(IdleState.WRITER_IDLE + "... from " + "-->" + ctx.channel().remoteAddress() + " nid:" + ctx.channel().id().asShortText());
+            log.info(IdleState.WRITER_IDLE + "... from " + "-->" + ctx.channel().remoteAddress() + " id:" + ctx.channel().id().asShortText());
         }
 
         //如果心跳请求发出70秒内没收到响应，则关闭连接
@@ -66,24 +70,20 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             //获取用户参数
             String userId = getUrlParams(request.uri());
             if (Strings.isNotBlank(userId)) {
-                //保存到登录信息map
                 userMap.put(userId, ctx.channel().id());
             }
-
             //如果url包含参数，需要处理
             if (request.uri().contains("?")) {
                 String newUri = request.uri().substring(0, request.uri().indexOf("?"));
                 request.setUri(newUri);
             }
-
         } else if (msg instanceof TextWebSocketFrame) {
-
-            SocketMessage message = JSON.parseObject(((TextWebSocketFrame) msg).text(), SocketMessage.class);
-            log.info(message.toString());
             try {
+                SocketMessage message = JSON.parseObject(((TextWebSocketFrame) msg).text(), SocketMessage.class);
+                log.info(message.toString());
                 receiveMessages(ctx, message);
             } catch (Exception e) {
-                log.error("WebSocketServerHandler channerRead error.", e);
+                log.error("发送消息错误");
                 throw e;
             }
         }
@@ -91,9 +91,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, TextWebSocketFrame textWebSocketFrame) {
-
-    }
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, TextWebSocketFrame textWebSocketFrame) {}
 
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
@@ -120,30 +118,25 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         return userId;
     }
 
-
-    /**
-     * to send message
-     *
-     * @param hander
-     * @param message
-     */
-    private void receiveMessages(ChannelHandlerContext hander, SocketMessage message) {
+    private void receiveMessages(ChannelHandlerContext handler, SocketMessage message) {
         switch (message.getMessageType()) {
             case CONNECT:
                 break;
             case CLOSE:
-                connertor.close(hander, message);
+                connertor.close(handler);
                 break;
             case HEART_BEAT:
-                connertor.heartbeatToClient(hander);
+                connertor.pushHeartApplyMessage(handler, message);
                 break;
             case GROUP:
                 connertor.pushGroupMessage(message);
                 break;
             case SEND:
-                connertor.pushMessage(hander, message);
+                connertor.pushMessage(handler, message);
+                break;
+            case HEART_BEAT_APPLY:
+                connertor.heartbeatToClient(handler);
                 break;
         }
-        ;
     }
 }

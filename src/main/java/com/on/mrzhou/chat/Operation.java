@@ -12,40 +12,36 @@ import org.springframework.stereotype.Component;
 @Component
 public class Operation {
 
-    public void heartbeatToClient(ChannelHandlerContext hander) {
+    public void heartbeatToClient(ChannelHandlerContext ctx) {
+        log.info("收到心跳回复，设置心跳响应时间,channel id" + ctx.channel().id());
         //设置心跳响应时间
-        hander.channel().attr(Constants.SERVER_SESSION_HEARBEAT).set(System.currentTimeMillis());
+        ctx.channel().attr(Constants.SERVER_SESSION_HEARBEAT).set(System.currentTimeMillis());
     }
 
 
-    public void pushGroupMessage(SocketMessage message)
-            throws RuntimeException {
+    public void pushGroupMessage(SocketMessage message) {
+        log.info("收到组消息,发送组消息");
         WebSocketServerHandler.channelGroup.writeAndFlush(message);
     }
 
 
-    public void pushMessage(ChannelHandlerContext ctx, SocketMessage message) throws RuntimeException {
-        try {
-            String chatId = message.getChatId();
-            if (WebSocketServerHandler.userMap.containsKey(chatId)) {
-                ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
-            }
-        } catch (Exception e) {
-            log.error("connector pushMessage  Exception.", e);
-            throw new RuntimeException(e.getCause());
+    public void pushMessage(ChannelHandlerContext ctx, SocketMessage message) {
+        log.info("收到消息,发送给接收方，channel id" + ctx.channel().id());
+        String chatId = message.getChatId();
+        if (WebSocketServerHandler.userMap.containsKey(chatId)) {
+            ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
         }
     }
 
 
-    public void close(ChannelHandlerContext hander, SocketMessage message) {
-        close(hander);
-        log.warn("connector close channel sessionId -> " + ", ctx -> " + hander.toString());
+    public void close(ChannelHandlerContext ctx) {
+        log.info("收到关系连接消息,执行关闭连接，channel id" + ctx.channel().id());
+        WebSocketServerHandler.channelGroup.remove(ctx.channel());
+        ctx.close();
     }
 
-
-    public void close(ChannelHandlerContext hander) {
-        WebSocketServerHandler.channelGroup.remove(hander.channel());
-        hander.close();
+    public void pushHeartApplyMessage(ChannelHandlerContext ctx, SocketMessage message) {
+        log.info("给客户端发送心跳消息 channel id" + ctx.channel().id());
+        ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
     }
-
 }
