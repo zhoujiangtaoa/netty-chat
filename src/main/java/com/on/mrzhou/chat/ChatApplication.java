@@ -13,7 +13,7 @@ public class ChatApplication implements CommandLineRunner {
     private  NettyServer nettyServer;
 
     public static void main(String[] args) {
-        SpringApplication.run(ChatApplication.class, args);
+        SpringApplication .run(ChatApplication.class, args);
     }
 
     @Override

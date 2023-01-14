@@ -23,7 +23,7 @@ public class Operation {
 
     public void pushGroupMessage(SocketMessage message) {
         log.info("收到组消息,发送组消息");
-        WebSocketServerHandler.channelGroup.writeAndFlush(message);
+        WebSocketServerHandler.channelGroup.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
     }
 
 

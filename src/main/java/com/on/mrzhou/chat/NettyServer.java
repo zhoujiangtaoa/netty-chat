@@ -1,10 +1,4 @@
-/**
- * **************************************************************************************
- *
- * @Author 1044053532@qq.com
- * @License http://www.apache.org/licenses/LICENSE-2.0
- * **************************************************************************************
- */
+
 package com.on.mrzhou.chat;
 
 import com.on.mrzhou.chat.constants.Constants;

@@ -25,4 +25,8 @@ public class SocketMessage {
      */
     private String message;
 
+    @Override
+    public String toString() {
+        return "用户" + this.getUserId() + "->接受者" + this.getChatId() + ",内容:" + this.getMessage() + ",类型:" + this.getMessageType() + "";
+    }
 }
